@@ -1,0 +1,3 @@
+C:/Users/thesh/Documents/SAMPLETOYC/cmake-build-debug/CMakeFiles/SAMPLETOYC.dir
+C:/Users/thesh/Documents/SAMPLETOYC/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/thesh/Documents/SAMPLETOYC/cmake-build-debug/CMakeFiles/rebuild_cache.dir
