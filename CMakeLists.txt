@@ -6,4 +6,5 @@ set(CMAKE_C_STANDARD 23)
 add_library(SAMPLETOYC STATIC library.c
         AudioSynthesis.c
         AudioSynthesis.h
+        main.c
 )

@@ -1,0 +1,3 @@
+C:/Users/thesh/Documents/SampletoyCgit/Sampletoy/build/CMakeFiles/SAMPLETOYC.dir
+C:/Users/thesh/Documents/SampletoyCgit/Sampletoy/build/CMakeFiles/edit_cache.dir
+C:/Users/thesh/Documents/SampletoyCgit/Sampletoy/build/CMakeFiles/rebuild_cache.dir
