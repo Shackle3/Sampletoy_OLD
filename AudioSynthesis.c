@@ -3,7 +3,8 @@
 //
 
 #include "AudioSynthesis.h"
-#include <math.h>
+#include "math.h" //math functions, pi
+#include "stdint.h" //uint_8
 
 //DEFINING GLOBAL CONSTANTS
 
@@ -13,6 +14,11 @@
 #define MAX_SYNTHESIZERS 16 //Current supported max size (from code) is 255
 //Setting time for once sample (double)
 #define SAMPLE_DURATION 0.00002267573 //SAMPLE RATE IS FIXED TO 44.100 khz, WILL CAUSE BUGS IF CHANGED
+//subdivisions per beat, so for the example of 4, it means the shortest note is a semiquaver
+#define SUBDIVISIONS_PER_BEAT 4
+//Pi
+#define PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062
+// @ todo combine all of these constants into one header
 
 //const variables
 //
@@ -37,18 +43,23 @@ const double NOTE_FREQUENCIES[] = {27.5, 29.135, 30.868, 32.703, 34.648, 36.708,
 //List of how many samples a note_on has been signaled to synth, index corresponds to playlist order.
 //
 
+//initialising on bpm is set to 130
+// 1 second / (2.1666 bps *
+unsigned int samplePerSmallestSubdivision = 1/((130/60) * SUBDIVISIONS_PER_BEAT * SAMPLE_DURATION);
+
 /// List of currently playing notes (nDFAWInfo[i] != 0),
 /// how long (in samples) each note will be held for, and at what duration one phase has in time
-//@todo Samples per smallest subdivision of note time should be calculated in the project initialisation, with BPM
 unsigned int noteDurFreqAmpWaveInfo[MAX_SYNTHESIZERS][4]; //size max synths x 2
-//noteDurationSamples[synth][0] := samples the note is held for
-//noteDurationSamples[synth][1] := 1/frequency of that note, time it takes for one oscillation
-//noteDurationSamples[synth][2] := Amplitude, equals (Note Velocity / 127) 127 being math velocity, max amp being 1
-//noteDurationSamples[synth][3] := Wave type
-
-/// List of current sample, so the code knows which phase to play.
-/// When currentPlayingSampleNumber = noteDurationSamples, complete last wave computation and then
-/// set noteDurationSamples[i] back to 0
+/*
+ * noteDurationSamples[synth][0] := samples the note is held for
+ * noteDurationSamples[synth][1] := 1/frequency of that note, time it takes for one oscillation
+ * noteDurationSamples[synth][2] := Amplitude, equals (Note Velocity / 127) 127 being math velocity, max amp being 1
+ * noteDurationSamples[synth][3] := Wave type
+ *
+ * List of current sample, so the code knows which phase to play.
+ * When currentPlayingSampleNumber = noteDurationSamples, complete last wave computation and then
+ * set noteDurationSamples[i] back to 0
+ */
 unsigned int currentPlayingSampleNumber[MAX_SYNTHESIZERS];
 
 
@@ -57,8 +68,12 @@ unsigned int currentPlayingSampleNumber[MAX_SYNTHESIZERS];
 //Assuming midiIn is >= 21, inline translates a midi code into a frequency.
 double midi_frequency_translator(unsigned midiNoteCode){return NOTE_FREQUENCIES[midiNoteCode - 21];}
 
-void parse_midi_input(unsigned noteCode, unsigned char velocity, unsigned duration,
-                      unsigned synthNumber, unsigned char waveType){
+void update_samples_per_smallest_subdiv(uint8_t bpm){
+    samplePerSmallestSubdivision = 1/((bpm/60) * SUBDIVISIONS_PER_BEAT * SAMPLE_DURATION);
+}
+
+void parse_midi_input(unsigned noteCode, uint8_t velocity, unsigned duration,
+                      unsigned synthNumber, uint8_t waveType){
     noteDurFreqAmpWaveInfo[synthNumber][0] = duration;
     noteDurFreqAmpWaveInfo[synthNumber][1] = 1 / midi_frequency_translator(noteCode);
     noteDurFreqAmpWaveInfo[synthNumber][2] = velocity / 127;
@@ -66,7 +81,7 @@ void parse_midi_input(unsigned noteCode, unsigned char velocity, unsigned durati
 
 }
 
-double math_wave_gen(unsigned char synthesiserNumber){
+double math_wave_gen(uint8_t synthesiserNumber){
     /*
      * Generates value that a synthesiser returns at the current sample
      *
@@ -74,7 +89,7 @@ double math_wave_gen(unsigned char synthesiserNumber){
      *  waveType: the function that should be used to generate the wave. In oversight
      *      0: 0 funtion
      *      1: sin
-     *      @todo MAKE MORE MATH FUNCTINOS, whatever you want. Planned implementation below
+     *      @ todo MAKE MORE MATH FUNCTIONS, whatever you want. Planned implementation below
      *      2: cos
      *      3: square
      *      4: triange
@@ -87,13 +102,13 @@ double math_wave_gen(unsigned char synthesiserNumber){
      */
 
     //Get note properties
-    unsigned char phaseDuration = noteDurFreqAmpWaveInfo[synthesiserNumber][1];
-    unsigned char amplitude = noteDurFreqAmpWaveInfo[synthesiserNumber][2];
+    uint8_t phaseDuration = noteDurFreqAmpWaveInfo[synthesiserNumber][1];
+    uint8_t amplitude = noteDurFreqAmpWaveInfo[synthesiserNumber][2];
     //calculate time
     //we know frequency, follows time for one phase = 1/frequency
     // time/T1Phase * 2pi = phase
     double time = currentPlayingSampleNumber[synthesiserNumber] * SAMPLE_DURATION;
-    double phase = (time/phaseDuration) * 2 *  M_PI;
+    double phase = (time/phaseDuration) * 2 *  PI;
     //Increment phase values
     currentPlayingSampleNumber[synthesiserNumber]++;
     //Generate function output
@@ -108,7 +123,7 @@ double math_wave_gen(unsigned char synthesiserNumber){
 }
 
 void cleanup_finished_midi(){
-    for (char synth = 0; synth < MAX_SYNTHESIZERS; synth++)
+    for (uint8_t synth = 0; synth < MAX_SYNTHESIZERS; synth++)
     {
         if (noteDurFreqAmpWaveInfo[synth][0] != 0){
             if (noteDurFreqAmpWaveInfo[synth][0] < currentPlayingSampleNumber[synth]){
