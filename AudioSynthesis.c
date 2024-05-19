@@ -1,5 +1,5 @@
 //
-// Created by Fabian Uni on 31/03/2024.
+// Edited Fabian on 19/05/2024.
 //
 
 #include "AudioSynthesis.h"
@@ -44,8 +44,7 @@ const double NOTE_FREQUENCIES[] = {27.5, 29.135, 30.868, 32.703, 34.648, 36.708,
 //
 
 //initialising on bpm is set to 130
-// 1 second / (2.1666 bps *
-unsigned int samplePerSmallestSubdivision = 1/((130/60) * SUBDIVISIONS_PER_BEAT * SAMPLE_DURATION);
+float samplePerSmallestSubdivision = 1/((130/60) * SUBDIVISIONS_PER_BEAT * SAMPLE_DURATION);
 
 /// List of currently playing notes (nDFAWInfo[i] != 0),
 /// how long (in samples) each note will be held for, and at what duration one phase has in time
@@ -56,12 +55,12 @@ unsigned int noteDurFreqAmpWaveInfo[MAX_SYNTHESIZERS][4]; //size max synths x 2
  * noteDurationSamples[synth][2] := Amplitude, equals (Note Velocity / 127) 127 being math velocity, max amp being 1
  * noteDurationSamples[synth][3] := Wave type
  *
- * List of current sample, so the code knows which phase to play.
  * When currentPlayingSampleNumber = noteDurationSamples, complete last wave computation and then
  * set noteDurationSamples[i] back to 0
  */
-unsigned int currentPlayingSampleNumber[MAX_SYNTHESIZERS];
 
+unsigned int currentPlayingSampleNumber[MAX_SYNTHESIZERS];
+// Index corresponds to synth
 
 //Functions:
 //
@@ -73,8 +72,8 @@ void update_samples_per_smallest_subdiv(uint8_t bpm){
 }
 
 void parse_midi_input(unsigned noteCode, uint8_t velocity, unsigned duration,
-                      unsigned synthNumber, uint8_t waveType){
-    noteDurFreqAmpWaveInfo[synthNumber][0] = duration;
+                      unsigned synthNumber, uint8_t waveType){ // use pointers
+    noteDurFreqAmpWaveInfo[synthNumber][0] = duration; //@todo WRONG, FIX THIS TO NOT BE SAMPLES BUT WHATEVER MIDI LENGTH IS
     noteDurFreqAmpWaveInfo[synthNumber][1] = 1 / midi_frequency_translator(noteCode);
     noteDurFreqAmpWaveInfo[synthNumber][2] = velocity / 127;
     noteDurFreqAmpWaveInfo[synthNumber][3] = waveType;
@@ -86,15 +85,6 @@ double math_wave_gen(uint8_t synthesiserNumber){
      * Generates value that a synthesiser returns at the current sample
      *
      * Inputs:
-     *  waveType: the function that should be used to generate the wave. In oversight
-     *      0: 0 funtion
-     *      1: sin
-     *      @ todo MAKE MORE MATH FUNCTIONS, whatever you want. Planned implementation below
-     *      2: cos
-     *      3: square
-     *      4: triange
-     *      5: saw
-     *
      *  synthesiserNumber: used to access information of that synthesiser and the various wave properties.
      *
      * Outputs:
@@ -117,6 +107,8 @@ double math_wave_gen(uint8_t synthesiserNumber){
             return 0;
         case 1:
             return sin(phase) * amplitude;
+        case 2:
+            return cos(phase) * amplitude;
         default:
             return 0;
     }

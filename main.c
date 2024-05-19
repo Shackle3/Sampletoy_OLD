@@ -4,3 +4,8 @@
 #include <stdio.h>
 #include "AudioSynthesis.h"
 
+int main(){
+
+
+    return 0;
+}

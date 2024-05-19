@@ -7,4 +7,5 @@ add_library(SAMPLETOYC STATIC library.c
         AudioSynthesis.c
         AudioSynthesis.h
         main.c
+        Tests.c
 )
