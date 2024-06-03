@@ -3,7 +3,7 @@
 //
 
 #include <stdint.h>
-
+#include <stdbool.h>
 #ifndef SAMPLETOYC_AUDIOSYNTHESIS_H
 #define SAMPLETOYC_AUDIOSYNTHESIS_H
 #define MAX_SYNTHESIZERS 16 //Current supported max size (from code) is 255
@@ -21,18 +21,20 @@ extern float samplePerSmallestSubdivision;
  *  1/SUBDIVISIONS_PER_BEAT beats is the smallest subdivision
  */
 
-extern unsigned int noteDurFreqAmpWaveInfo[][4];
+struct MathSynthHost{
+    unsigned int samplesHeldFor; // num of samples the note is held for
+    double notePeriod; // 1/frequency of that note, time it takes for one oscillation
+    float noteAmplitude; // 1 corresponds to 0 db, @todo logarithmic
+    uint8_t waveType; // Setting as to which math wave should be modelled
+};
+
+typedef struct MathSynthHost mathsynth;
+
+extern mathsynth mathSynthInstances[];
 /*
- * Acronym NDFAWI
+ * Array of math synthesisers, see above for struct implementation
  *
- * Matrix, containing play settings. Settings correspond to the synths using its index.
- *
- * noteDurationSamples[synth][0] := samples the note is held for
- * noteDurationSamples[synth][1] := 1/frequency of that note, time it takes for one oscillation
- * noteDurationSamples[synth][2] := Amplitude, equals (Note Velocity / 127) 127 being math velocity, max amp being 1
- * noteDurationSamples[synth][3] := Wave type
- *
- * When currentPlayingSampleNumber = noteDurationSamples, complete last wave computation and then
+ * When samplesheldfor = noteDurationSamples, complete last wave computation and then
  * set noteDurationSamples[i] back to 0 using (and handled by) cleanup_finished_midi
  */
 
@@ -102,4 +104,5 @@ void cleanup_finished_midi();
  * Cleans up note information from expired notes. Run at the end of a sample loop in main.
  */
 
+void initialise_the_mathsynths();
 #endif //SAMPLETOYC_AUDIOSYNTHESIS_H

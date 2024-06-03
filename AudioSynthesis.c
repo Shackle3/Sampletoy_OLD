@@ -1,5 +1,10 @@
 //
-// Edited Fabian on 19/05/2024.
+// Edited Fabian on 03/06/2024. Ver 0.2
+/*  Change notes: ver 0.2
+ *      - Changed the 2d array of synth information to be a 1d array of structs
+ *      - Renamed said array to represent the new data it holds.
+ *
+ * */
 //
 
 #include "AudioSynthesis.h"
@@ -48,12 +53,9 @@ float samplePerSmallestSubdivision = 1/((130/60) * SUBDIVISIONS_PER_BEAT * SAMPL
 
 /// List of currently playing notes (nDFAWInfo[i] != 0),
 /// how long (in samples) each note will be held for, and at what duration one phase has in time
-unsigned int noteDurFreqAmpWaveInfo[MAX_SYNTHESIZERS][4]; //size max synths x 2
+mathsynth mathSynthInstances[MAX_SYNTHESIZERS]; //size max synths x 2
 /*
- * noteDurationSamples[synth][0] := samples the note is held for
- * noteDurationSamples[synth][1] := 1/frequency of that note, time it takes for one oscillation
- * noteDurationSamples[synth][2] := Amplitude, equals (Note Velocity / 127) 127 being math velocity, max amp being 1
- * noteDurationSamples[synth][3] := Wave type
+ * For implementation see MathSynthHost struct in Audiosynthesis.h
  *
  * When currentPlayingSampleNumber = noteDurationSamples, complete last wave computation and then
  * set noteDurationSamples[i] back to 0
@@ -72,11 +74,11 @@ void update_samples_per_smallest_subdiv(uint8_t bpm){
 }
 
 void parse_midi_input(unsigned noteCode, uint8_t velocity, unsigned duration,
-                      unsigned synthNumber, uint8_t waveType){ // use pointers
-    noteDurFreqAmpWaveInfo[synthNumber][0] = duration; //@todo WRONG, FIX THIS TO NOT BE SAMPLES BUT WHATEVER MIDI LENGTH IS
-    noteDurFreqAmpWaveInfo[synthNumber][1] = 1 / midi_frequency_translator(noteCode);
-    noteDurFreqAmpWaveInfo[synthNumber][2] = velocity / 127;
-    noteDurFreqAmpWaveInfo[synthNumber][3] = waveType;
+                      unsigned synthNumber, uint8_t wave){
+    mathSynthInstances[synthNumber].samplesHeldFor = duration;
+    mathSynthInstances[synthNumber].notePeriod = 1 / midi_frequency_translator(noteCode);
+    mathSynthInstances[synthNumber].noteAmplitude = velocity / 127;
+    mathSynthInstances[synthNumber].waveType = wave;
 
 }
 
@@ -92,8 +94,8 @@ double math_wave_gen(uint8_t synthesiserNumber){
      */
 
     //Get note properties
-    uint8_t phaseDuration = noteDurFreqAmpWaveInfo[synthesiserNumber][1];
-    uint8_t amplitude = noteDurFreqAmpWaveInfo[synthesiserNumber][2];
+    double phaseDuration = mathSynthInstances[synthesiserNumber].notePeriod; //in seconds
+    float amplitude = mathSynthInstances[synthesiserNumber].noteAmplitude;
     //calculate time
     //we know frequency, follows time for one phase = 1/frequency
     // time/T1Phase * 2pi = phase
@@ -102,7 +104,7 @@ double math_wave_gen(uint8_t synthesiserNumber){
     //Increment phase values
     currentPlayingSampleNumber[synthesiserNumber]++;
     //Generate function output
-    switch (noteDurFreqAmpWaveInfo[synthesiserNumber][3]) {
+    switch (mathSynthInstances[synthesiserNumber].waveType) {
         case 0:
             return 0;
         case 1:
@@ -117,17 +119,26 @@ double math_wave_gen(uint8_t synthesiserNumber){
 void cleanup_finished_midi(){
     for (uint8_t synth = 0; synth < MAX_SYNTHESIZERS; synth++)
     {
-        if (noteDurFreqAmpWaveInfo[synth][0] != 0){
-            if (noteDurFreqAmpWaveInfo[synth][0] < currentPlayingSampleNumber[synth]){
+        if (mathSynthInstances[synth].samplesHeldFor != 0){ //ignore not playing synths
+            if (mathSynthInstances[synth].samplesHeldFor < currentPlayingSampleNumber[synth]){
                 //case, the synth sample exceeds the duration specified on the creation
-                //destroy note in memory
+                //reset note in memory
                 currentPlayingSampleNumber[synth] = 0;
-                noteDurFreqAmpWaveInfo[synth][0] = 0;
-                noteDurFreqAmpWaveInfo[synth][1] = 0;
-                noteDurFreqAmpWaveInfo[synth][2] = 0;
-                noteDurFreqAmpWaveInfo[synth][3] = 0;
+                mathSynthInstances[synth].samplesHeldFor = 0;
+                mathSynthInstances[synth].notePeriod = 0;
+                mathSynthInstances[synth].noteAmplitude = 0;
+                mathSynthInstances[synth].waveType = 0;
             }
         }
+    }
+}
+
+void initialise_the_mathsynths(){
+    for (uint8_t i = 0; i < MAX_SYNTHESIZERS; i++){
+        mathSynthInstances[i].samplesHeldFor = 0;
+        mathSynthInstances[i].notePeriod = 0;
+        mathSynthInstances[i].noteAmplitude = 0;
+        mathSynthInstances[i].waveType = 0;
     }
 }
 

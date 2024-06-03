@@ -1,0 +1,21 @@
+asdf
+
+Not code, but placing this here in order to keep track of what commands
+NEED to be called, and when they need to be called in main.c
+
+While my dumb ass hasn't implemented main.c yet, bare with me.
+
+    PRELOOP:
+audiosynthesis/initialise_the_mathsynths();
+
+
+    LOOP:
+
+
+    END OF LOOP CLEANUP:
+audiosynthesis/cleanup_finished_midi();
+
+
+    POST LOOP (boot down):
+//try to keep this kinda empty, i already know most people just opt to flip the off switch like me and my pc
+//todo save state here

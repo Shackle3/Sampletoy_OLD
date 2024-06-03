@@ -8,8 +8,10 @@
  * TESTING STUFF, DO NOT INCLUDE IN THE FINAL SOLUTION (main)
  */
 void hello_world(){
-    printf("hello world test");
+    printf("hello world test\n");
 }
+
+
 
 int main()
 {
